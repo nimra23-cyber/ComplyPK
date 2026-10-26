@@ -1,0 +1,124 @@
+{
+  "questions": [
+    {
+      "id": "AC-1",
+      "domain": "Access Control",
+      "text": "Do you enforce unique user accounts with strong passwords for all staff accessing company systems?",
+      "allowed_answers": ["yes", "partial", "no"]
+    },
+    {
+      "id": "AC-2",
+      "domain": "Access Control",
+      "text": "Do you require multi-factor authentication (MFA) for critical systems and remote access?",
+      "allowed_answers": ["yes", "partial", "no"]
+    },
+    {
+      "id": "AC-3",
+      "domain": "Access Control",
+      "text": "Do you review and revoke access promptly when employees change roles or leave?",
+      "allowed_answers": ["yes", "partial", "no"]
+    },
+    {
+      "id": "AC-4",
+      "domain": "Access Control",
+      "text": "Do you apply least-privilege, granting staff only the access they need for their role?",
+      "allowed_answers": ["yes", "partial", "no"]
+    },
+    {
+      "id": "BR-1",
+      "domain": "Backup & Recovery",
+      "text": "Do you take regular backups of critical data and systems?",
+      "allowed_answers": ["yes", "partial", "no"]
+    },
+    {
+      "id": "BR-2",
+      "domain": "Backup & Recovery",
+      "text": "Do you periodically test restoring from backups to confirm they work?",
+      "allowed_answers": ["yes", "partial", "no"]
+    },
+    {
+      "id": "BR-3",
+      "domain": "Backup & Recovery",
+      "text": "Do you keep at least one backup copy offline or in a separate location from production?",
+      "allowed_answers": ["yes", "partial", "no"]
+    },
+    {
+      "id": "PT-1",
+      "domain": "Patching",
+      "text": "Do you apply security updates to operating systems and software in a timely manner?",
+      "allowed_answers": ["yes", "partial", "no"]
+    },
+    {
+      "id": "PT-2",
+      "domain": "Patching",
+      "text": "Do you maintain an inventory of software and systems that need patching?",
+      "allowed_answers": ["yes", "partial", "no"]
+    },
+    {
+      "id": "PT-3",
+      "domain": "Patching",
+      "text": "Do you track and remediate known vulnerabilities on internet-facing systems?",
+      "allowed_answers": ["yes", "partial", "no"]
+    },
+    {
+      "id": "IR-1",
+      "domain": "Incident Response",
+      "text": "Do you have a documented plan describing how to respond to a security incident?",
+      "allowed_answers": ["yes", "partial", "no"]
+    },
+    {
+      "id": "IR-2",
+      "domain": "Incident Response",
+      "text": "Do staff know how to report a suspected security incident, and to whom?",
+      "allowed_answers": ["yes", "partial", "no"]
+    },
+    {
+      "id": "IR-3",
+      "domain": "Incident Response",
+      "text": "Do you keep logs that would help you investigate a security incident?",
+      "allowed_answers": ["yes", "partial", "no"]
+    },
+    {
+      "id": "VR-1",
+      "domain": "Vendor Risk",
+      "text": "Do you assess the security practices of third-party vendors before granting them access or data?",
+      "allowed_answers": ["yes", "partial", "no"]
+    },
+    {
+      "id": "VR-2",
+      "domain": "Vendor Risk",
+      "text": "Do your contracts with vendors include security and data-protection obligations?",
+      "allowed_answers": ["yes", "partial", "no"]
+    },
+    {
+      "id": "VR-3",
+      "domain": "Vendor Risk",
+      "text": "Do you maintain an up-to-date list of vendors that handle your data or systems?",
+      "allowed_answers": ["yes", "partial", "no"]
+    },
+    {
+      "id": "DP-1",
+      "domain": "Data Protection",
+      "text": "Do you encrypt sensitive data at rest (e.g. databases, backups, laptops)?",
+      "allowed_answers": ["yes", "partial", "no"]
+    },
+    {
+      "id": "DP-2",
+      "domain": "Data Protection",
+      "text": "Do you encrypt sensitive data in transit (e.g. HTTPS/TLS for all services)?",
+      "allowed_answers": ["yes", "partial", "no"]
+    },
+    {
+      "id": "DP-3",
+      "domain": "Data Protection",
+      "text": "Do you classify data so staff know what is sensitive and how to handle it?",
+      "allowed_answers": ["yes", "partial", "no"]
+    },
+    {
+      "id": "DP-4",
+      "domain": "Data Protection",
+      "text": "Do you restrict and monitor who can access customer and financial data?",
+      "allowed_answers": ["yes", "partial", "no"]
+    }
+  ]
+}

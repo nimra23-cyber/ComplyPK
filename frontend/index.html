@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ComplyPK — Security &amp; Compliance Readiness Platform</title>
+    <!--
+      Static app (plain HTML/CSS/JS, no build step). The backend base URL comes
+      ONLY from config.js (window.API_BASE_URL). config.js MUST load before app.js.
+      No secrets belong in this frontend bundle.
+    -->
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <!-- SIDEBAR -->
+      <aside class="sidebar" id="sidebar">
+        <div class="side-brand">
+          <span class="side-logo" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+          </span>
+          <div>
+            <div class="side-name">ComplyPK</div>
+            <div class="side-sub">Readiness Platform</div>
+          </div>
+        </div>
+
+        <nav class="side-nav" aria-label="Primary">
+          <button class="side-link active" data-view="overview">
+            <svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z"/></svg>
+            <span>Overview</span>
+          </button>
+          <button class="side-link" data-view="company">
+            <svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M3 21V9l9-6 9 6v12h-6v-6h-6v6H3Z"/></svg>
+            <span>Company Profile</span>
+          </button>
+          <button class="side-link" data-view="assess">
+            <svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M9 11H3v2h6v6h2v-6h6v-2h-6V5H9v6Z"/></svg>
+            <span>New Assessment</span>
+          </button>
+          <button class="side-link" data-view="history">
+            <svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M13 3a9 9 0 1 0 8.9 10.5h-2.1A7 7 0 1 1 13 5v4l5-5-5-5v4Zm-1 5v5l4 2 .8-1.6L13 12V8h-1Z"/></svg>
+            <span>Assessment History</span>
+          </button>
+          <button class="side-link" data-view="remediation">
+            <svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5l-8-3Z"/></svg>
+            <span>Remediation Center</span>
+          </button>
+          <button class="side-link" data-view="reports">
+            <svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M6 2h9l5 5v15H6V2Zm8 1.5V8h4.5L14 3.5ZM8 13h8v-2H8v2Zm0 4h8v-2H8v2Z"/></svg>
+            <span>Reports</span>
+          </button>
+          <button class="side-link" data-view="demo">
+            <svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M8 5v14l11-7L8 5Z"/></svg>
+            <span>Demo Workspace</span>
+          </button>
+        </nav>
+
+        <div class="side-foot">
+          <div class="side-health" id="side-health">
+            <span class="dot" id="health-dot"></span>
+            <span id="health-text">checking…</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- MAIN -->
+      <div class="main">
+        <header class="topbar">
+          <button class="hamburger" id="hamburger" aria-label="Toggle navigation">
+            <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 6h18v2H3V6Zm0 5h18v2H3v-2Zm0 5h18v2H3v-2Z"/></svg>
+          </button>
+          <div class="top-title">
+            <h1 id="top-view-title">Overview</h1>
+            <p class="top-desc">Cyber-security readiness assessment for SMEs &amp; fintechs</p>
+          </div>
+          <div class="top-right">
+            <span class="workspace-chip" id="workspace-chip" hidden></span>
+            <span class="switcher" id="company-switcher"></span>
+            <span class="conn" id="conn-chip" title="Backend connection">
+              <span class="dot" id="conn-dot"></span>
+              <span id="conn-text">checking…</span>
+            </span>
+            <span class="user-chip" id="user-chip"></span>
+          </div>
+        </header>
+
+        <main class="workspace">
+          <div id="banner" class="banner" hidden role="alert"></div>
+
+          <!-- OVERVIEW -->
+          <section id="view-overview" class="view"></section>
+
+          <!-- COMPANY PROFILE -->
+          <section id="view-company" class="view" hidden>
+            <div class="card">
+              <h2 id="company-heading">Company profile</h2>
+              <p class="muted" id="company-intro">
+                Tell us about your organization. This profile is attached to each
+                assessment you run. ComplyPK is a single-user tool — there is no login,
+                and this information is stored only in your own backend database.
+              </p>
+              <form id="company-form" novalidate>
+                <div class="form-grid">
+                  <div class="field">
+                    <label for="cf-name">Company name <span class="req">*</span></label>
+                    <input id="cf-name" name="name" type="text" maxlength="200" autocomplete="organization" />
+                    <p class="field-error" id="cf-name-error" hidden></p>
+                  </div>
+                  <div class="field">
+                    <label for="cf-industry">Industry</label>
+                    <input id="cf-industry" name="industry" type="text" maxlength="120" list="industry-list" />
+                    <datalist id="industry-list">
+                      <option value="Fintech"></option>
+                      <option value="Banking"></option>
+                      <option value="E-commerce"></option>
+                      <option value="Healthcare"></option>
+                      <option value="Software / SaaS"></option>
+                      <option value="Manufacturing"></option>
+                      <option value="Education"></option>
+                      <option value="Government"></option>
+                    </datalist>
+                  </div>
+                  <div class="field">
+                    <label for="cf-size">Company size</label>
+                    <select id="cf-size" name="size">
+                      <option value="">Select…</option>
+                      <option>1-10</option>
+                      <option>11-50</option>
+                      <option>51-200</option>
+                      <option>201-500</option>
+                      <option>500+</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="cf-country">Country</label>
+                    <input id="cf-country" name="country" type="text" maxlength="120" value="" />
+                  </div>
+                  <div class="field">
+                    <label for="cf-email">Contact email</label>
+                    <input id="cf-email" name="contact_email" type="email" maxlength="254" autocomplete="email" />
+                    <p class="field-error" id="cf-email-error" hidden></p>
+                  </div>
+                </div>
+                <div class="actions">
+                  <button type="submit" id="btn-save-company" class="btn">Save profile</button>
+                  <button type="button" id="btn-company-to-assess" class="btn btn-ghost" hidden>Continue to assessment</button>
+                </div>
+                <p id="company-saved-note" class="demo-note" hidden></p>
+              </form>
+            </div>
+
+            <!-- Legacy data claim (Company Admin only) -->
+            <div class="card" id="legacy-card" hidden>
+              <h3>Legacy data</h3>
+              <p class="muted" id="legacy-summary">Checking for unassigned records…</p>
+              <div class="actions">
+                <button type="button" id="btn-claim-legacy" class="btn" disabled>Claim legacy data</button>
+              </div>
+              <p id="legacy-note" class="demo-note" hidden></p>
+            </div>
+          </section>
+
+          <!-- NEW ASSESSMENT -->
+          <section id="view-assess" class="view" hidden>
+            <div class="banner info" id="onboard-gate" hidden></div>
+            <div class="card hero">
+              <div class="hero-text">
+                <h2>Assess your compliance readiness</h2>
+                <p class="muted">
+                  Answer 20 questions across six security domains. ComplyPK scores your
+                  readiness, maps gaps to ISO&nbsp;27001 and NIST&nbsp;CSF, and builds a
+                  prioritized remediation plan.
+                </p>
+                <div class="actions">
+                  <button id="btn-load" class="btn">Load questionnaire</button>
+                  <button id="btn-demo-prefill" class="btn btn-ghost">Prefill with demo company</button>
+                </div>
+                <p id="demo-note" class="demo-note" hidden></p>
+              </div>
+              <ol class="hero-steps">
+                <li><span>1</span> Answer by domain</li>
+                <li><span>2</span> Get scored instantly</li>
+                <li><span>3</span> Review gaps &amp; fixes</li>
+                <li><span>4</span> Export a report</li>
+              </ol>
+            </div>
+
+            <form id="questionnaire-form" hidden>
+              <div class="assess-progress card">
+                <div class="progress-head">
+                  <span id="progress-label">0% complete</span>
+                  <span class="muted"><span id="answered-count">0</span> / <span id="total-count">0</span> answered</span>
+                </div>
+                <div class="bar lg"><span id="progress-fill"></span></div>
+              </div>
+              <div id="domains"></div>
+              <div class="submit-bar">
+                <button type="button" id="btn-reset" class="btn btn-ghost">Reset answers</button>
+                <button type="submit" id="btn-submit" class="btn" disabled>Submit assessment</button>
+              </div>
+            </form>
+          </section>
+
+          <!-- RESULTS -->
+          <section id="view-results" class="view" hidden>
+            <div class="results-top">
+              <button class="link-back" data-view="assess">← New assessment</button>
+              <button class="link-back" data-view="history">View history →</button>
+            </div>
+            <div class="card score-card">
+              <div class="gauge" id="gauge" role="img" aria-label="Overall readiness score">
+                <svg viewBox="0 0 120 120" width="140" height="140">
+                  <circle cx="60" cy="60" r="52" class="gauge-track"/>
+                  <circle cx="60" cy="60" r="52" class="gauge-fill" id="gauge-fill"/>
+                </svg>
+                <div class="gauge-center">
+                  <span id="overall-score">0</span><small>/100</small>
+                </div>
+              </div>
+              <div class="score-meta">
+                <span class="risk-badge" id="risk-badge">—</span>
+                <h2>Readiness score</h2>
+                <p class="muted" id="result-meta"></p>
+                <div class="result-actions">
+                  <button id="btn-remediation" class="btn btn-ghost">View remediation</button>
+                  <button id="btn-report" class="btn btn-ghost">Download report (.md)</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Domain breakdown</h3>
+              <div id="domain-scores" class="domain-grid"></div>
+            </div>
+
+            <div class="card">
+              <h3>Identified gaps <span class="count-pill" id="gap-count"></span></h3>
+              <div id="gaps"></div>
+            </div>
+
+            <div class="card" id="remediation-card" hidden>
+              <h3>Remediation plan <span class="src-badge" id="rem-source"></span></h3>
+              <ol id="remediation-list" class="rem-list"></ol>
+            </div>
+
+            <p class="disclaimer" id="results-disclaimer"></p>
+          </section>
+
+          <!-- HISTORY -->
+          <section id="view-history" class="view" hidden>
+            <div class="section-head">
+              <div>
+                <h2>Assessment history</h2>
+                <p class="muted">Saved readiness assessments, most recent first.</p>
+              </div>
+              <button class="btn btn-ghost" id="btn-history-refresh">Refresh</button>
+            </div>
+            <div id="history-list"></div>
+          </section>
+
+          <!-- REMEDIATION CENTER -->
+          <section id="view-remediation" class="view" hidden>
+            <div class="section-head">
+              <div>
+                <h2>Remediation Center</h2>
+                <p class="muted">Prioritized actions for your most recent assessment.</p>
+              </div>
+            </div>
+            <div id="remediation-center"></div>
+          </section>
+
+          <!-- REPORTS -->
+          <section id="view-reports" class="view" hidden>
+            <div class="section-head">
+              <div>
+                <h2>Reports</h2>
+                <p class="muted">Download a Markdown report for any saved assessment.</p>
+              </div>
+            </div>
+            <div id="reports-list"></div>
+          </section>
+
+          <!-- DEMO WORKSPACE -->
+          <section id="view-demo" class="view" hidden>
+            <div class="card">
+              <h2>Demo Workspace</h2>
+              <p class="muted">
+                Explore ComplyPK with a sample fintech company. Loading the demo prefills
+                the questionnaire with sample answers — it does <strong>not</strong> submit
+                automatically, so you can review and edit before scoring.
+              </p>
+              <div id="demo-company" class="demo-company" hidden></div>
+              <div class="actions">
+                <button id="btn-demo-load" class="btn">Load demo &amp; open questionnaire</button>
+              </div>
+            </div>
+          </section>
+        </main>
+
+        <footer class="footer">
+          <span class="disclaimer-inline" id="footer-disclaimer"></span>
+        </footer>
+      </div>
+    </div>
+
+    <!-- confirm dialog -->
+    <div class="modal" id="confirm-modal" hidden>
+      <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+        <h3 id="confirm-title">Discard answers?</h3>
+        <p id="confirm-text" class="muted">This will clear all your current answers.</p>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="confirm-cancel">Cancel</button>
+          <button class="btn btn-danger" id="confirm-ok">Discard</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- config.js loads first so window.API_BASE_URL is set before app.js runs -->
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

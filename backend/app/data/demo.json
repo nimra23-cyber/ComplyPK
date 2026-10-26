@@ -1,0 +1,29 @@
+{
+  "company": {
+    "name": "Karachi FinServ (Pvt) Ltd",
+    "sector": "Fintech",
+    "size": "45 employees"
+  },
+  "answers": {
+    "AC-1": "yes",
+    "AC-2": "partial",
+    "AC-3": "no",
+    "AC-4": "partial",
+    "BR-1": "yes",
+    "BR-2": "no",
+    "BR-3": "partial",
+    "PT-1": "partial",
+    "PT-2": "no",
+    "PT-3": "no",
+    "IR-1": "no",
+    "IR-2": "partial",
+    "IR-3": "yes",
+    "VR-1": "no",
+    "VR-2": "partial",
+    "VR-3": "yes",
+    "DP-1": "partial",
+    "DP-2": "yes",
+    "DP-3": "no",
+    "DP-4": "partial"
+  }
+}
