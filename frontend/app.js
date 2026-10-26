@@ -950,6 +950,9 @@
     }
     $("#team-company-label").textContent =
       "Manage members and invitations for " + (activeCompanyName() || "your company") + ".";
+    // Make the Team view visible before populating it. Without this the section
+    // stays hidden and its buttons are never shown/clickable.
+    showView("team");
     loadTeamMembers();
     loadInvitations();
     $("#share-link-result").hidden = true;
