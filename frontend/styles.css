@@ -304,6 +304,15 @@ h3 { font-size: 1.02rem; margin: 0 0 .9rem; }
 .field input.invalid { border-color: var(--high); }
 .field-error { color: var(--high); font-size: .8rem; margin: 0; }
 
+/* ---- Team / invitations ---- */
+hr.soft { border: none; border-top: 1px solid var(--line); margin: 1.1rem 0; }
+.share-result { margin-top: .8rem; display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.share-result input {
+  flex: 1; min-width: 220px; padding: .5rem .7rem; border: 1px solid var(--line);
+  border-radius: 9px; font-size: .88rem; background: #f7f9fe; color: var(--ink);
+}
+.share-result p { flex-basis: 100%; margin: .2rem 0 0; }
+
 /* ---- Disclaimer / footer ---- */
 .disclaimer { font-size: .82rem; color: var(--muted); font-style: italic; border-top: 1px dashed var(--line); padding-top: .8rem; }
 .footer { padding: 1rem 1.5rem 1.8rem; max-width: 1080px; margin: 0 auto; width: 100%; }

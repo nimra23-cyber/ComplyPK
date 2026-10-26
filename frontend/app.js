@@ -144,6 +144,7 @@
   var VIEW_TITLES = {
     overview: "Overview",
     company: "Company Profile",
+    team: "Team Management",
     assess: "New Assessment",
     results: "Assessment Results",
     history: "Assessment History",
@@ -155,7 +156,7 @@
   // ---- View switching -----------------------------------------------------
 
   function showView(name) {
-    ["overview", "company", "assess", "results", "history", "remediation", "reports", "demo"].forEach(function (v) {
+    ["overview", "company", "team", "invite", "verify", "assess", "results", "history", "remediation", "reports", "demo"].forEach(function (v) {
       var sec = $("#view-" + v);
       if (sec) sec.hidden = v !== name;
     });
@@ -931,6 +932,294 @@
     if (demoPrefill) demoPrefill.disabled = !hasProfile;
   }
 
+  // ---- Team Management (admin only) --------------------------------------
+
+  function updateTeamNavVisibility() {
+    var link = $("#side-team");
+    if (link) link.hidden = activeRole() !== "admin";
+  }
+
+  function renderTeamView() {
+    clearBanner();
+    updateTeamNavVisibility();
+    if (activeRole() !== "admin") {
+      // Backend also enforces this; hide the admin-only view defensively.
+      showView("overview");
+      showBanner("Team Management is available to company admins only.", "info");
+      return;
+    }
+    $("#team-company-label").textContent =
+      "Manage members and invitations for " + (activeCompanyName() || "your company") + ".";
+    loadTeamMembers();
+    loadInvitations();
+    $("#share-link-result").hidden = true;
+  }
+
+  function loadTeamMembers() {
+    var host = $("#team-members");
+    host.innerHTML = '<p class="loading"><span class="spinner"></span>Loading…</p>';
+    // Members list is derived from memberships the backend exposes via /api/auth/me
+    // for the current user; a full roster endpoint is out of scope, so we show
+    // the current user's role and note that invitations grant member access.
+    host.innerHTML = "";
+    var row = el("div", "row");
+    var left = el("div");
+    left.appendChild(el("div", null, auth.user ? auth.user.email : "You"));
+    left.appendChild(el("div", "meta", "You — " + (activeRole() || "member")));
+    row.appendChild(left);
+    host.appendChild(row);
+    host.appendChild(el("p", "muted small",
+      "A full team roster requires a members endpoint (not yet implemented). Invited teammates appear in your company after they accept."));
+  }
+
+  function loadInvitations() {
+    var host = $("#invitations-list");
+    host.innerHTML = '<p class="loading"><span class="spinner"></span>Loading…</p>';
+    apiFetch("/api/invitations")
+      .then(function (rows) {
+        host.innerHTML = "";
+        if (!rows || rows.length === 0) {
+          host.appendChild(el("p", "muted", "No invitations yet."));
+          return;
+        }
+        rows.forEach(function (inv) { host.appendChild(invitationRow(inv)); });
+      })
+      .catch(function (err) {
+        host.innerHTML = "";
+        if (err.status === 403) { showView("overview"); showBanner("Admins only.", "info"); return; }
+        host.appendChild(el("p", "muted", "Could not load invitations: " + err.message));
+      });
+  }
+
+  function invitationRow(inv) {
+    var r = el("div", "row");
+    var left = el("div");
+    var label = inv.invite_type === "email" ? (inv.email || "email invite") : "Shareable link";
+    left.appendChild(el("div", null, label));
+    var meta = inv.status + " • uses " + inv.use_count + "/" + inv.max_uses +
+      " • expires " + new Date(inv.expires_at).toLocaleString();
+    left.appendChild(el("div", "meta", meta));
+    r.appendChild(left);
+    var right = el("div", "row-actions");
+    var statusPill = el("span", "count-pill", inv.status);
+    right.appendChild(statusPill);
+    if (inv.status === "pending") {
+      var rev = el("button", "btn btn-ghost", "Revoke");
+      rev.addEventListener("click", function () { confirmRevokeInvitation(inv.id); });
+      right.appendChild(rev);
+    }
+    r.appendChild(right);
+    return r;
+  }
+
+  function confirmRevokeInvitation(id) {
+    openConfirm("Revoke invitation?", "This invitation link/email will stop working immediately.", function () {
+      apiFetch("/api/invitations/" + id + "/revoke", { method: "POST" })
+        .then(function () { loadInvitations(); })
+        .catch(function (err) { showBanner("Could not revoke: " + err.message); });
+    });
+  }
+
+  function sendEmailInvite(ev) {
+    ev.preventDefault();
+    clearFieldError("inv-email");
+    var email = $("#inv-email").value.trim();
+    var hours = parseInt($("#inv-email-expiry").value, 10) || 72;
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setFieldError("inv-email", "Enter a valid email address."); return;
+    }
+    var btn = $("#btn-invite-email");
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Sending…';
+    apiFetch("/api/invitations/email", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email, expires_in_hours: hours }),
+    })
+      .then(function () {
+        $("#inv-email").value = "";
+        showBanner("Invitation email sent to " + email + ".", "info");
+        loadInvitations();
+      })
+      .catch(function (err) {
+        if (err.status === 503) {
+          $("#invite-email-smtp-note").hidden = false;
+          showBanner("Email is not configured on the server. Use a shareable link instead.", "error");
+        } else if (err.status === 502) {
+          showBanner("The invitation email could not be delivered. It was not sent.", "error");
+        } else {
+          showBanner("Could not send invite: " + err.message, "error");
+        }
+      })
+      .finally(function () { btn.disabled = false; btn.textContent = "Send email invite"; });
+  }
+
+  function generateShareLink() {
+    var uses = parseInt($("#inv-link-uses").value, 10) || 1;
+    var hours = parseInt($("#inv-link-expiry").value, 10) || 72;
+    var btn = $("#btn-invite-link");
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Generating…';
+    apiFetch("/api/invitations/link", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ expires_in_hours: hours, max_uses: uses }),
+    })
+      .then(function (inv) {
+        var box = $("#share-link-result");
+        $("#share-link-input").value = inv.share_url || "";
+        box.hidden = false;
+        loadInvitations();
+      })
+      .catch(function (err) { showBanner("Could not generate link: " + err.message); })
+      .finally(function () { btn.disabled = false; btn.textContent = "Generate shareable link"; });
+  }
+
+  function copyShareLink() {
+    var input = $("#share-link-input");
+    var val = input.value;
+    var done = function (ok) {
+      var b = $("#btn-copy-link");
+      b.textContent = ok ? "Copied!" : "Copy failed";
+      setTimeout(function () { b.textContent = "Copy"; }, 1800);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(val).then(function () { done(true); }, function () {
+        input.select(); done(document.execCommand ? document.execCommand("copy") : false);
+      });
+    } else {
+      input.select();
+      try { done(document.execCommand("copy")); } catch (e) { done(false); }
+    }
+  }
+
+  // ---- Invitation acceptance flow ----------------------------------------
+
+  var pendingInviteToken = null;
+
+  function openInviteFlow(token) {
+    pendingInviteToken = token;
+    showView("invite");
+    var body = $("#invite-body");
+    body.innerHTML = '<p class="loading"><span class="spinner"></span>Checking invitation…</p>';
+
+    if (!auth.user) {
+      // Require sign-in first; keep the token in memory (not persistent storage).
+      body.innerHTML = "";
+      body.appendChild(el("p", null, "Please sign in or create an account to accept this invitation."));
+      var btn = el("button", "btn", "Sign in / Register");
+      btn.addEventListener("click", function () { showAuth(); });
+      body.appendChild(btn);
+      return;
+    }
+    validateAndShowInvite(token);
+  }
+
+  function validateAndShowInvite(token) {
+    var body = $("#invite-body");
+    apiFetch("/api/invitations/validate?token=" + encodeURIComponent(token))
+      .then(function (info) {
+        body.innerHTML = "";
+        if (!info.valid) {
+          body.appendChild(el("p", "muted",
+            "This invitation is " + (info.status || "invalid") + " and can no longer be used."));
+          var home = el("button", "btn btn-ghost", "Go to dashboard");
+          home.addEventListener("click", function () { renderOverview(); showView("overview"); });
+          body.appendChild(home);
+          return;
+        }
+        body.appendChild(el("p", null,
+          "You've been invited to join " + (info.company_name || "a company") + " as a member."));
+        if (info.invite_type === "email" && info.requires_email) {
+          body.appendChild(el("p", "muted small",
+            "This invite is for " + info.requires_email + " and requires a verified matching email."));
+        }
+        var accept = el("button", "btn", "Accept invitation");
+        accept.addEventListener("click", function () { acceptInvite(token); });
+        body.appendChild(accept);
+        var cancel = el("button", "btn btn-ghost", "Not now");
+        cancel.style.marginLeft = ".5rem";
+        cancel.addEventListener("click", function () { renderOverview(); showView("overview"); });
+        body.appendChild(cancel);
+      })
+      .catch(function (err) {
+        body.innerHTML = "";
+        body.appendChild(el("p", "muted", "Could not validate the invitation: " + err.message));
+      });
+  }
+
+  function acceptInvite(token) {
+    var body = $("#invite-body");
+    apiFetch("/api/invitations/accept", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: token }),
+    })
+      .then(function (res) {
+        pendingInviteToken = null;
+        // Refresh session so the new membership + switcher appear.
+        return apiFetch("/api/auth/me").then(function (me) {
+          applySession(me);
+          auth.activeCompanyId = res.company_id;
+          renderUserChip(); renderCompanySwitcher(); updateTeamNavVisibility();
+          body.innerHTML = "";
+          var msg = res.already_member
+            ? "You are already a member of " + res.company_name + "."
+            : "You've joined " + res.company_name + " as a member.";
+          body.appendChild(el("p", "no-gaps", msg));
+          var go = el("button", "btn", "Go to dashboard");
+          go.addEventListener("click", function () {
+            clearCompanyUiState(); loadProfile().then(function () { renderOverview(); showView("overview"); });
+          });
+          body.appendChild(go);
+        });
+      })
+      .catch(function (err) {
+        if (err.status === 403) {
+          showBanner(err.message || "This invitation requires a verified matching email.", "error");
+        } else {
+          showBanner("Could not accept the invitation: " + err.message, "error");
+        }
+      });
+  }
+
+  // ---- Email verification flow -------------------------------------------
+
+  function openVerifyFlow(token) {
+    showView("verify");
+    var body = $("#verify-body");
+    if (!auth.user) {
+      body.innerHTML = "";
+      body.appendChild(el("p", null, "Please sign in to verify your email, then re-open the link."));
+      var btn = el("button", "btn", "Sign in");
+      btn.addEventListener("click", function () { showAuth(); });
+      body.appendChild(btn);
+      return;
+    }
+    apiFetch("/api/auth/verify-email", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: token }),
+    })
+      .then(function (me) {
+        applySession(me);
+        body.innerHTML = "";
+        body.appendChild(el("p", "no-gaps", "Your email has been verified."));
+        var go = el("button", "btn", "Continue");
+        go.addEventListener("click", function () { renderOverview(); showView("overview"); });
+        body.appendChild(go);
+      })
+      .catch(function (err) {
+        body.innerHTML = "";
+        body.appendChild(el("p", "muted", "This verification link is invalid or has expired."));
+      });
+  }
+
+  function consumeUrlFragment() {
+    var h = window.location.hash || "";
+    var m = h.match(/^#(invite|verify)=(.+)$/);
+    if (!m) return null;
+    var kind = m[1];
+    var token = decodeURIComponent(m[2]);
+    // Clear the fragment so the token isn't left in the address bar / history.
+    try { history.replaceState(null, "", window.location.pathname + window.location.search); } catch (e) {}
+    return { kind: kind, token: token };
+  }
+
   // ---- Confirm modal ------------------------------------------------------
 
   var confirmCb = null;
@@ -1043,6 +1332,7 @@
     sel.addEventListener("change", function () {
       auth.activeCompanyId = parseInt(sel.value, 10);
       clearCompanyUiState();            // clear stale company data
+      updateTeamNavVisibility();        // team link depends on role in active company
       loadProfile().then(function () {  // reload for the new active company
         updateOnboardingGate();
         renderOverview();
@@ -1099,8 +1389,22 @@
   function afterAuth() {
     renderUserChip();
     renderCompanySwitcher();
+    updateTeamNavVisibility();
+
+    // If the user arrived via an invite/verify link, resume that flow instead
+    // of forcing company creation (an invite will grant membership).
+    if (pendingInviteToken) {
+      var t = pendingInviteToken;
+      return Promise.resolve(openInviteFlow(t));
+    }
+    if (window._pendingVerifyToken) {
+      var vt = window._pendingVerifyToken; window._pendingVerifyToken = null;
+      return Promise.resolve(openVerifyFlow(vt));
+    }
+
     return ensureCompanyThen(function () {
       renderCompanySwitcher();
+      updateTeamNavVisibility();
       checkHealth();
       loadProfile().then(function () {
         updateOnboardingGate();
@@ -1120,6 +1424,7 @@
         var v = btn.dataset.view;
         if (v === "overview") renderOverview();
         if (v === "company") renderCompanyView();
+        if (v === "team") { renderTeamView(); return; }
         if (v === "assess") updateOnboardingGate();
         if (v === "history") loadHistory();
         if (v === "remediation") renderRemediationCenter();
@@ -1161,15 +1466,30 @@
     });
     $("#btn-claim-legacy").addEventListener("click", claimLegacy);
 
+    // Team Management handlers.
+    $("#invite-email-form").addEventListener("submit", sendEmailInvite);
+    $("#btn-invite-link").addEventListener("click", generateShareLink);
+    $("#btn-copy-link").addEventListener("click", copyShareLink);
+
     checkHealth();
+    // Capture any invite/verify token from the URL fragment (then clear it).
+    var frag = consumeUrlFragment();
+
     // Require authentication before showing any company data.
     apiFetch("/api/auth/me")
       .then(function (me) {
         applySession(me);
-        afterAuth();
+        return afterAuth();
+      })
+      .then(function () {
+        if (frag && frag.kind === "invite") openInviteFlow(frag.token);
+        else if (frag && frag.kind === "verify") openVerifyFlow(frag.token);
       })
       .catch(function () {
         // Not authenticated (401) or backend down — show the auth gate.
+        // Preserve the invite/verify intent across sign-in (in-memory only).
+        if (frag && frag.kind === "invite") pendingInviteToken = frag.token;
+        window._pendingVerifyToken = frag && frag.kind === "verify" ? frag.token : null;
         showAuth();
       });
   }

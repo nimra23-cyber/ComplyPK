@@ -28,9 +28,14 @@ from app.deps import (
     ForbiddenError,
     get_current_user,
 )
-from app.errors import AppError
+from app.errors import AppError, ValidationError
 from app.repositories.auth_repository import AuthRepository
 from app.security import generate_token, hash_password, hash_token, verify_password
+from app.services.email_service import (
+    EmailDeliveryError,
+    EmailNotConfigured,
+    send_verification_email,
+)
 
 router = APIRouter(prefix="/api", tags=["auth"])
 
@@ -108,6 +113,7 @@ def login(
     return schemas.MeResponse(
         user_id=user.id,
         email=user.email,
+        email_verified=user.email_verified,
         memberships=_memberships_payload(repo, user.id),
         csrf_token=csrf,
     )
@@ -128,9 +134,68 @@ def me(
     user: CurrentUser = Depends(get_current_user), db: Session = Depends(get_db)
 ) -> schemas.MeResponse:
     repo = AuthRepository(db)
+    db_user = repo.get_user(user.id)
     return schemas.MeResponse(
         user_id=user.id,
         email=user.email,
+        email_verified=bool(db_user and db_user.email_verified),
+        memberships=_memberships_payload(repo, user.id),
+        csrf_token=user.csrf_token,
+    )
+
+
+@router.post("/auth/request-verification")
+def request_email_verification(
+    user: CurrentUser = Depends(get_current_user), db: Session = Depends(get_db)
+) -> dict:
+    """Email a single-use verification link to the authenticated user.
+
+    The raw token is delivered ONLY by email and never returned here, so a user
+    cannot self-verify without inbox access. Fails clearly (503) when SMTP is
+    not configured. Idempotent-safe: issuing a new token does not verify anyone.
+    """
+    settings = load_settings()
+    if not settings.email_configured:
+        raise AppError(503, "Email sending is not configured on the server.")
+
+    repo = AuthRepository(db)
+    db_user = repo.get_user(user.id)
+    if db_user is None:
+        raise AppError(401, "Authentication required.")
+    if db_user.email_verified:
+        return {"status": "already_verified"}
+
+    raw_token = generate_token()
+    repo.create_email_verification_token(user.id, hash_token(raw_token), ttl_hours=24)
+    try:
+        send_verification_email(settings, db_user.email, raw_token)
+    except (EmailNotConfigured, EmailDeliveryError) as exc:
+        raise AppError(502, str(exc))
+    return {"status": "sent"}
+
+
+@router.post("/auth/verify-email", response_model=schemas.MeResponse)
+def verify_email(
+    payload: schemas.VerifyEmailInput,
+    user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> schemas.MeResponse:
+    """Redeem a verification token for the authenticated user.
+
+    The token must belong to this user, be unused, and be unexpired. Generic
+    failure message avoids leaking whether a token exists.
+    """
+    repo = AuthRepository(db)
+    tok = repo.consume_email_verification_token(hash_token(payload.token))
+    if tok is None or tok.user_id != user.id:
+        raise ValidationError("This verification link is invalid or has expired.")
+
+    db_user = repo.get_user(user.id)
+    repo.set_email_verified(db_user)
+    return schemas.MeResponse(
+        user_id=db_user.id,
+        email=db_user.email,
+        email_verified=True,
         memberships=_memberships_payload(repo, user.id),
         csrf_token=user.csrf_token,
     )

@@ -162,6 +162,45 @@ def company_b(company_factory):
 
 
 @pytest.fixture()
+def db_access(db_session):
+    """Direct DB access for test setup/assertions (bypasses the API)."""
+    class _Access:
+        def set_verified_by_email(self, email):
+            from app.models.auth import User
+            db = db_session()
+            try:
+                u = db.query(User).filter(User.email == email.lower()).first()
+                if u:
+                    u.email_verified = True
+                    db.commit()
+            finally:
+                db.close()
+
+        def invitation_token_hashes(self):
+            from app.models.auth import Invitation
+            db = db_session()
+            try:
+                return [i.token_hash for i in db.query(Invitation).all()]
+            finally:
+                db.close()
+
+        def membership_count(self, user_email, company_id):
+            from app.models.auth import Membership, User
+            db = db_session()
+            try:
+                u = db.query(User).filter(User.email == user_email.lower()).first()
+                if not u:
+                    return 0
+                return db.query(Membership).filter(
+                    Membership.user_id == u.id, Membership.company_id == company_id
+                ).count()
+            finally:
+                db.close()
+
+    return _Access()
+
+
+@pytest.fixture()
 def seed_legacy(db_session):
     """Insert an unowned (legacy) assessment + profile directly into the DB.
 

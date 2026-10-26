@@ -151,6 +151,48 @@ managed PostgreSQL instance.
    Cloudflare Pages).
 4. Set the backend's `ALLOWED_FRONTEND_ORIGIN` to the deployed frontend origin.
 
+## Team invitations
+
+Company **admins** can invite teammates (who always join as **members** — invitations
+never grant admin). Two mechanisms are supported:
+
+- **Email invitation** (`POST /api/invitations/email`) — bound to the recipient's
+  email. Requires SMTP to be configured; acceptance requires the accepting account
+  to have a **verified, matching** email. If SMTP is not configured the endpoint
+  returns 503 and no invitation is created; if delivery fails it returns 502 and the
+  invitation is rolled back (never a false "sent").
+- **Shareable link** (`POST /api/invitations/link`) — returns a one-time `share_url`
+  (the raw token is shown once, never stored or logged). Single-use by default;
+  `max_uses > 1` creates a reusable link that stays valid until used up or expired —
+  share those only through trusted channels.
+
+Other endpoints: `GET /api/invitations` (admin list), `POST /api/invitations/{id}/revoke`
+(admin), `GET /api/invitations/validate?token=...` (authenticated, non-consuming),
+`POST /api/invitations/accept` (authenticated). Opening/validating a link never
+consumes it; acceptance is explicit and atomic (no duplicate memberships, safe under
+concurrency). All management is scoped to the active company via the server-side
+authorization dependency — Company A can never manage or accept into Company B.
+
+### Email verification
+
+Email-bound invitations require a verified email. To verify:
+`POST /api/auth/request-verification` emails a single-use link (the raw token is
+**only** sent by email, never returned by the API), and `POST /api/auth/verify-email`
+redeems it. Without SMTP configured, verification requests return 503 — so email
+invitations cannot be accepted in that environment, while shareable links still work.
+
+### Invitation / verification URLs
+
+Links are built from `ALLOWED_FRONTEND_ORIGIN` (never a client Host header) as
+`<origin>/index.html#invite=<token>` and `<origin>/index.html#verify=<token>`. The
+frontend reads the token from the fragment, clears it from the address bar, validates
+without consuming, and only redeems on explicit user action.
+
+### Email provider setup
+
+Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` (see
+`.env.example`). Credentials live only in the environment. STARTTLS is used.
+
 ## Limitations
 
 - **No authentication / authorization** — out of scope; do not expose sensitive data.

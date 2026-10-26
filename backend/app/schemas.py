@@ -172,6 +172,14 @@ class MeResponse(BaseModel):
     csrf_token: str
 
 
+class VerifyEmailInput(BaseModel):
+    """Redeem an email-verification token."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    token: str = Field(min_length=10, max_length=256)
+
+
 # --- Company profile ---------------------------------------------------------
 
 class CompanyProfileInput(BaseModel):

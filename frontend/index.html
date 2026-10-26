@@ -34,6 +34,10 @@
             <svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M3 21V9l9-6 9 6v12h-6v-6h-6v6H3Z"/></svg>
             <span>Company Profile</span>
           </button>
+          <button class="side-link" data-view="team" id="side-team" hidden>
+            <svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M16 11c1.66 0 3-1.34 3-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3Zm-8 0c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3Zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13Zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5Z"/></svg>
+            <span>Team Management</span>
+          </button>
           <button class="side-link" data-view="assess">
             <svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M9 11H3v2h6v6h2v-6h6v-2h-6V5H9v6Z"/></svg>
             <span>New Assessment</span>
@@ -158,6 +162,85 @@
                 <button type="button" id="btn-claim-legacy" class="btn" disabled>Claim legacy data</button>
               </div>
               <p id="legacy-note" class="demo-note" hidden></p>
+            </div>
+          </section>
+
+          <!-- TEAM MANAGEMENT (admin only) -->
+          <section id="view-team" class="view" hidden>
+            <div class="section-head">
+              <div>
+                <h2>Team Management</h2>
+                <p class="muted" id="team-company-label"></p>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Team members</h3>
+              <div id="team-members"><p class="loading">Loading…</p></div>
+            </div>
+
+            <div class="card">
+              <h3>Invite a teammate</h3>
+              <p class="muted">Invited users join as <strong>members</strong>. Admin access is never granted by an invitation.</p>
+              <form id="invite-email-form" novalidate>
+                <div class="form-grid">
+                  <div class="field">
+                    <label for="inv-email">Invite by email</label>
+                    <input id="inv-email" type="email" maxlength="254" placeholder="teammate@company.com" />
+                    <p class="field-error" id="inv-email-error" hidden></p>
+                  </div>
+                  <div class="field">
+                    <label for="inv-email-expiry">Expires in (hours)</label>
+                    <input id="inv-email-expiry" type="number" min="1" max="720" value="72" />
+                  </div>
+                </div>
+                <div class="actions">
+                  <button type="submit" class="btn" id="btn-invite-email">Send email invite</button>
+                </div>
+                <p class="muted small" id="invite-email-smtp-note" hidden>
+                  Email delivery requires SMTP to be configured on the server. Use a shareable link if email is unavailable.
+                </p>
+              </form>
+              <hr class="soft" />
+              <div class="form-grid">
+                <div class="field">
+                  <label for="inv-link-uses">Shareable link — max uses</label>
+                  <input id="inv-link-uses" type="number" min="1" max="100" value="1" />
+                </div>
+                <div class="field">
+                  <label for="inv-link-expiry">Expires in (hours)</label>
+                  <input id="inv-link-expiry" type="number" min="1" max="720" value="72" />
+                </div>
+              </div>
+              <div class="actions">
+                <button type="button" class="btn btn-ghost" id="btn-invite-link">Generate shareable link</button>
+              </div>
+              <div id="share-link-result" class="share-result" hidden>
+                <input id="share-link-input" type="text" readonly />
+                <button type="button" class="btn" id="btn-copy-link">Copy</button>
+                <p class="muted small">Single-use by default. A reusable link (max uses &gt; 1) stays valid until used up or expired — share it only through trusted channels.</p>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Pending &amp; recent invitations</h3>
+              <div id="invitations-list"><p class="loading">Loading…</p></div>
+            </div>
+          </section>
+
+          <!-- INVITATION ACCEPTANCE (opened from an invite link) -->
+          <section id="view-invite" class="view" hidden>
+            <div class="card" id="invite-card">
+              <h2>Join a team</h2>
+              <div id="invite-body"><p class="loading"><span class="spinner"></span>Checking invitation…</p></div>
+            </div>
+          </section>
+
+          <!-- EMAIL VERIFICATION (opened from a verify link) -->
+          <section id="view-verify" class="view" hidden>
+            <div class="card">
+              <h2>Verify your email</h2>
+              <div id="verify-body"><p class="loading"><span class="spinner"></span>Verifying…</p></div>
             </div>
           </section>
 

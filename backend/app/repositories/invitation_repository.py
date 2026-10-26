@@ -123,8 +123,14 @@ class InvitationRepository:
                 Invitation.expires_at > now,
             )
             .values(use_count=Invitation.use_count + 1)
+            # Evaluate the WHERE in SQL, not in Python, to avoid comparing a
+            # naive (SQLite) datetime against an aware one in the ORM evaluator.
+            .execution_options(synchronize_session=False)
         )
         result = self._db.execute(stmt)
+        # The session may hold a stale copy; expire it so the subsequent get()
+        # reflects the committed use_count.
+        self._db.expire_all()
         if result.rowcount != 1:
             self._db.rollback()
             return False

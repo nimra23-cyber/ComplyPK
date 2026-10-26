@@ -75,6 +75,7 @@ app.include_router(questionnaire.router)
 app.include_router(assessments.router)
 app.include_router(demo.router)
 app.include_router(company.router)
+app.include_router(invitations.router)
 
 
 @app.get("/health")

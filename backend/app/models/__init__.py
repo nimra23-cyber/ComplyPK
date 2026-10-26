@@ -5,7 +5,14 @@ Importing this package registers all model tables on ``Base.metadata`` so that
 """
 
 from app.models.assessment import Assessment
-from app.models.auth import Company, Invitation, Membership, User, UserSession
+from app.models.auth import (
+    Company,
+    EmailVerificationToken,
+    Invitation,
+    Membership,
+    User,
+    UserSession,
+)
 from app.models.company_profile import CompanyProfile
 
 __all__ = [
@@ -16,4 +23,5 @@ __all__ = [
     "Membership",
     "UserSession",
     "Invitation",
+    "EmailVerificationToken",
 ]

@@ -11,11 +11,21 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models.auth import Company, Membership, User, UserSession
+from app.models.auth import (
+    Company,
+    EmailVerificationToken,
+    Membership,
+    User,
+    UserSession,
+)
 
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _aware(dt: datetime) -> datetime:
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
 
 
 class AuthRepository:
@@ -37,6 +47,41 @@ class AuthRepository:
         self._db.commit()
         self._db.refresh(user)
         return user
+
+    def set_email_verified(self, user: User) -> None:
+        user.email_verified = True
+        self._db.commit()
+
+    # --- Email verification tokens ------------------------------------------
+
+    def create_email_verification_token(
+        self, user_id: int, token_hash: str, ttl_hours: int = 24
+    ) -> EmailVerificationToken:
+        now = _utcnow()
+        tok = EmailVerificationToken(
+            user_id=user_id,
+            token_hash=token_hash,
+            created_at=now,
+            expires_at=now + timedelta(hours=ttl_hours),
+        )
+        self._db.add(tok)
+        self._db.commit()
+        self._db.refresh(tok)
+        return tok
+
+    def consume_email_verification_token(self, token_hash: str) -> EmailVerificationToken | None:
+        """Return a valid, unused, unexpired token and mark it used, else None."""
+        stmt = select(EmailVerificationToken).where(
+            EmailVerificationToken.token_hash == token_hash
+        )
+        tok = self._db.scalars(stmt).first()
+        if tok is None or tok.used_at is not None:
+            return None
+        if _aware(tok.expires_at) <= _utcnow():
+            return None
+        tok.used_at = _utcnow()
+        self._db.commit()
+        return tok
 
     # --- Companies & memberships --------------------------------------------
 

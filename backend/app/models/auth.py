@@ -104,6 +104,26 @@ INVITE_TYPE_EMAIL = "email"
 INVITE_TYPE_LINK = "link"
 
 
+class EmailVerificationToken(Base):
+    """A single-use email-verification token (hash only), bound to a user.
+
+    The raw token is delivered ONLY via email and never returned by the API, so
+    a user cannot mark their own email verified without controlling the inbox.
+    All timestamps are UTC.
+    """
+
+    __tablename__ = "email_verification_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 class Invitation(Base):
     """A company team invitation (email-bound or shareable link).
 
