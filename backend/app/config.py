@@ -18,11 +18,31 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from urllib.parse import urlparse
 
 # Local SQLite database file used when DATABASE_URL is not provided (Req 9.2).
 # The scheme is a constant, not a secret or an externally supplied URL.
 _DEFAULT_SQLITE_URL = "sqlite:///./complypk.db"
+
+# backend/.env sits two levels up from this file (app/config.py -> app -> backend).
+_BACKEND_ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
+
+
+def _load_dotenv_if_present() -> None:
+    """Load variables from ``backend/.env`` into the process environment.
+
+    Real OS environment variables take precedence (``override=False``), so this
+    only fills in values that are not already set — safe for local development
+    and inert in production where variables come from the host. Import-guarded so
+    config still works if python-dotenv is unavailable. Never logs values.
+    """
+    try:
+        from dotenv import load_dotenv
+    except Exception:  # pragma: no cover - optional dependency
+        return
+    if _BACKEND_ENV_PATH.is_file():
+        load_dotenv(dotenv_path=_BACKEND_ENV_PATH, override=False)
 
 
 class ConfigError(RuntimeError):
@@ -55,11 +75,24 @@ class Settings:
     smtp_user: str | None = None
     smtp_password: str | None = None
     smtp_from: str | None = None
+    # Optional Groq settings for AI-generated remediation. The key is read from
+    # GROQ_API_KEY and is never exposed to the frontend. The model id is
+    # configurable because Groq's catalog changes over time; verify availability
+    # for your key (see README). When the key is absent, or the call fails/
+    # rate-limits/times out/returns invalid output, the deterministic template
+    # fallback is used.
+    groq_api_key: str | None = None
+    groq_model: str = "llama-3.1-8b-instant"
 
     @property
     def email_configured(self) -> bool:
         """True only when the minimum SMTP settings are present."""
         return bool(self.smtp_host and self.smtp_from)
+
+    @property
+    def groq_configured(self) -> bool:
+        """True only when a Groq API key is present."""
+        return bool(self.groq_api_key)
 
 
 def _require_allowed_origin(raw: str | None) -> str:
@@ -121,6 +154,9 @@ def load_settings(environ: dict[str, str] | None = None) -> Settings:
     Raises:
         ConfigError: If required configuration is missing or invalid.
     """
+    if environ is None:
+        # Fill missing values from backend/.env for local dev (OS env wins).
+        _load_dotenv_if_present()
     env = os.environ if environ is None else environ
 
     allowed_frontend_origin = _require_allowed_origin(
@@ -154,4 +190,6 @@ def load_settings(environ: dict[str, str] | None = None) -> Settings:
         smtp_user=_opt("SMTP_USER"),
         smtp_password=_opt("SMTP_PASSWORD"),
         smtp_from=_opt("SMTP_FROM"),
+        groq_api_key=_opt("GROQ_API_KEY"),
+        groq_model=_opt("GROQ_MODEL") or "llama-3.1-8b-instant",
     )

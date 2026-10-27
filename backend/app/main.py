@@ -44,6 +44,12 @@ settings = load_settings()
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     """Create database tables if they do not yet exist, at startup."""
+    # Ensure ComplyPK's own diagnostic logs (e.g. the Groq status/category
+    # diagnostics) are visible at INFO when running under uvicorn. This does not
+    # change any behavior — observability only.
+    import logging
+
+    logging.getLogger("complypk").setLevel(logging.INFO)
     init_db()
     yield
 

@@ -134,7 +134,12 @@ def generate_remediation(
         raise NotFoundError(f"Assessment {assessment_id} was not found.")
 
     gaps = [schemas.Gap(**gap) for gap in assessment.gaps]
-    plan = generate_remediation_plan(gaps)
+    plan = generate_remediation_plan(
+        gaps,
+        overall_score=assessment.overall_score,
+        domain_scores=assessment.domain_scores,
+        answers=assessment.answers,
+    )
     repo.update_remediation(assessment_id, ctx.company_id, plan.model_dump())
     return plan
 
@@ -158,7 +163,12 @@ def get_remediation(
         return schemas.RemediationPlanResponse(**assessment.remediation_plan)
 
     gaps = [schemas.Gap(**gap) for gap in assessment.gaps]
-    plan = generate_remediation_plan(gaps)
+    plan = generate_remediation_plan(
+        gaps,
+        overall_score=assessment.overall_score,
+        domain_scores=assessment.domain_scores,
+        answers=assessment.answers,
+    )
     repo.update_remediation(assessment_id, ctx.company_id, plan.model_dump())
     return plan
 
