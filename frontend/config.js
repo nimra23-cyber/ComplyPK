@@ -5,4 +5,4 @@
 // static host build/deploy step overwrites it with the deployed
 // backend URL). Do NOT put secrets here — this file is served to
 // the browser as-is.
-window.API_BASE_URL = "http://localhost:8000";
+window.API_BASE_URL = "https://complypk.onrender.com";
