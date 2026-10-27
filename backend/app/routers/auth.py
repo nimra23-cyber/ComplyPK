@@ -55,16 +55,18 @@ def _is_secure_env() -> bool:
         return False
 
 
+
 def _set_session_cookie(response: Response, token: str) -> None:
     response.set_cookie(
         key=SESSION_COOKIE,
         value=token,
         httponly=True,
-        samesite="lax",
-        secure=_is_secure_env(),
+        samesite="none",
+        secure=True,
         max_age=_SESSION_TTL_HOURS * 3600,
         path="/",
     )
+
 
 
 def _memberships_payload(repo: AuthRepository, user_id: int) -> list[schemas.MembershipInfo]:
